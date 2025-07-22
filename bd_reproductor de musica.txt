@@ -1,0 +1,260 @@
+-- Crear la base de datos (si no existe)
+CREATE DATABASE sistema_musical;
+
+-- Crear tabla de artistas
+CREATE TABLE artistas (
+    id_artista SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear tabla de álbumes
+CREATE TABLE albumes (
+    id_album SERIAL PRIMARY KEY,
+    titulo VARCHAR(100) NOT NULL,
+    id_artista INTEGER NOT NULL,
+    año_lanzamiento INTEGER,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_artista) REFERENCES artistas(id_artista) ON DELETE CASCADE
+);
+
+-- Crear tabla de canciones
+CREATE TABLE canciones (
+    id_cancion SERIAL PRIMARY KEY,
+    titulo VARCHAR(100) NOT NULL,
+    id_artista INTEGER NOT NULL,
+    id_album INTEGER,
+    duracion TIME,
+    url VARCHAR(255),
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_artista) REFERENCES artistas(id_artista) ON DELETE CASCADE,
+    FOREIGN KEY (id_album) REFERENCES albumes(id_album) ON DELETE SET NULL
+);
+
+-- Crear tabla de listas de reproducción
+CREATE TABLE listas_reproduccion (
+    id_lista SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear tabla de relación entre listas y canciones
+CREATE TABLE canciones_lista (
+    id_cancion_lista SERIAL PRIMARY KEY,
+    id_lista INTEGER NOT NULL,
+    id_cancion INTEGER NOT NULL,
+    posicion INTEGER,
+    fecha_agregado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_lista) REFERENCES listas_reproduccion(id_lista) ON DELETE CASCADE,
+    FOREIGN KEY (id_cancion) REFERENCES canciones(id_cancion) ON DELETE CASCADE,
+    UNIQUE (id_lista, id_cancion) -- Evita duplicados en la misma lista
+);
+
+-- Insertar datos de ejemplo
+-- Artistas
+INSERT INTO artistas (nombre) VALUES 
+('The Beatles'),
+('Pink Floyd'),
+('Queen'),
+('Led Zeppelin'),
+('Radiohead');
+
+-- Álbumes
+INSERT INTO albumes (titulo, id_artista, año_lanzamiento) VALUES 
+('Abbey Road', 1, 1969),
+('The Dark Side of the Moon', 2, 1973),
+('A Night at the Opera', 3, 1975),
+('Led Zeppelin IV', 4, 1971),
+('OK Computer', 5, 1997);
+
+-- Canciones
+INSERT INTO canciones (titulo, id_artista, id_album, duracion, url) VALUES
+('Come Together', 1, 1, '00:04:20', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+('Something', 1, 1, '00:03:03', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'),
+('Time', 2, 2, '00:06:53', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'),
+('Money', 2, 2, '00:06:22', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'),
+('Bohemian Rhapsody', 3, 3, '00:05:55', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'),
+('Stairway to Heaven', 4, 4, '00:08:02', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'),
+('Paranoid Android', 5, 5, '00:06:23', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3');
+
+-- Listas de reproducción
+INSERT INTO listas_reproduccion (nombre, descripcion) VALUES
+('Clásicos del Rock', 'Las mejores canciones clásicas de rock'),
+('Música para programar', 'Canciones ideales para concentrarse mientras programas'),
+('Mis favoritas', 'Mis canciones preferidas de todos los tiempos');
+
+-- Relación canciones-listas
+INSERT INTO canciones_lista (id_lista, id_cancion, posicion) VALUES
+(1, 1, 1),
+(1, 3, 2),
+(1, 5, 3),
+(1, 6, 4),
+(2, 7, 1),
+(2, 2, 2),
+(3, 5, 1),
+(3, 6, 2),
+(3, 7, 3);
+
+
+-- 1. Obtener todas las canciones de un artista específico
+SELECT c.titulo AS cancion, a.titulo AS album, ar.nombre AS artista, c.duracion
+FROM canciones c
+JOIN albumes a ON c.id_album = a.id_album
+JOIN artistas ar ON c.id_artista = ar.id_artista
+WHERE ar.nombre = 'Queen'
+ORDER BY a.año_lanzamiento, c.titulo;
+
+-- 2. Mostrar todas las canciones de un álbum específico
+SELECT c.titulo AS cancion, c.duracion, a.titulo AS album, ar.nombre AS artista
+FROM canciones c
+JOIN albumes a ON c.id_album = a.id_album
+JOIN artistas ar ON c.id_artista = ar.id_artista
+WHERE a.titulo = 'Abbey Road'
+ORDER BY c.id_cancion;
+
+-- 3. Listar todas las canciones de una playlist
+SELECT c.titulo AS cancion, ar.nombre AS artista, a.titulo AS album, cl.posicion
+FROM canciones_lista cl
+JOIN canciones c ON cl.id_cancion = c.id_cancion
+JOIN artistas ar ON c.id_artista = ar.id_artista
+LEFT JOIN albumes a ON c.id_album = a.id_album
+WHERE cl.id_lista = 1
+ORDER BY cl.posicion;
+
+-- 4. Buscar canciones por título (búsqueda parcial)
+SELECT c.titulo AS cancion, ar.nombre AS artista, a.titulo AS album, c.duracion
+FROM canciones c
+JOIN artistas ar ON c.id_artista = ar.id_artista
+LEFT JOIN albumes a ON c.id_album = a.id_album
+WHERE c.titulo LIKE '%Heaven%';
+
+-- 5. Obtener la duración total de una playlist
+SELECT l.nombre AS lista, 
+       MAKE_INTERVAL(secs => SUM(EXTRACT(EPOCH FROM c.duracion)) AS duracion_total
+FROM listas_reproduccion l
+JOIN canciones_lista cl ON l.id_lista = cl.id_lista
+JOIN canciones c ON cl.id_cancion = c.id_cancion
+WHERE l.id_lista = 1
+GROUP BY l.id_lista;
+
+-- 6. Mostrar los álbumes de un artista con su cantidad de canciones
+SELECT a.titulo AS album, a.año_lanzamiento, COUNT(c.id_cancion) AS num_canciones
+FROM albumes a
+LEFT JOIN canciones c ON a.id_album = c.id_album
+WHERE a.id_artista = 1
+GROUP BY a.id_album, a.titulo, a.año_lanzamiento
+ORDER BY a.año_lanzamiento;
+
+-- 7. Obtener las canciones más largas del sistema
+SELECT c.titulo AS cancion, ar.nombre AS artista, c.duracion
+FROM canciones c
+JOIN artistas ar ON c.id_artista = ar.id_artista
+ORDER BY c.duracion DESC
+LIMIT 5;
+
+-- 1. Función para agregar una canción a una playlist
+CREATE OR REPLACE FUNCTION agregar_cancion_a_lista(
+    p_id_lista INTEGER,
+    p_id_cancion INTEGER
+)
+RETURNS TEXT AS $$
+DECLARE
+    v_max_posicion INTEGER;
+    v_resultado TEXT;
+BEGIN
+    -- Obtener la última posición en la lista
+    SELECT COALESCE(MAX(posicion), 0) INTO v_max_posicion 
+    FROM canciones_lista 
+    WHERE id_lista = p_id_lista;
+    
+    -- Insertar la canción al final de la lista
+    INSERT INTO canciones_lista (id_lista, id_cancion, posicion)
+    VALUES (p_id_lista, p_id_cancion, v_max_posicion + 1);
+    
+    v_resultado := 'Canción agregada a la lista en la posición ' || (v_max_posicion + 1);
+    RETURN v_resultado;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ejemplo de uso: SELECT agregar_cancion_a_lista(1, 7);
+
+-- 2. Función para obtener las canciones de un artista con filtros
+CREATE OR REPLACE FUNCTION obtener_canciones_artista(
+    p_id_artista INTEGER,
+    p_orden VARCHAR DEFAULT 'titulo',
+    p_limite INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+    cancion VARCHAR(100),
+    album VARCHAR(100),
+    duracion TIME,
+    año_lanzamiento INTEGER
+) AS $$
+BEGIN
+    RETURN QUERY EXECUTE format('
+        SELECT c.titulo AS cancion, al.titulo AS album, c.duracion, al.año_lanzamiento
+        FROM canciones c
+        LEFT JOIN albumes al ON c.id_album = al.id_album
+        WHERE c.id_artista = %s', p_id_artista) ||
+    CASE 
+        WHEN p_orden = 'album' THEN ' ORDER BY al.año_lanzamiento, al.titulo, c.titulo'
+        WHEN p_orden = 'duracion' THEN ' ORDER BY c.duracion DESC'
+        ELSE ' ORDER BY c.titulo'
+    END ||
+    CASE 
+        WHEN p_limite > 0 THEN ' LIMIT ' || p_limite
+        ELSE ''
+    END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ejemplo de uso: SELECT * FROM obtener_canciones_artista(1, 'album', 10);
+
+-- 1. Trigger para actualizar automáticamente la fecha de creación cuando se inserta un nuevo artista
+CREATE OR REPLACE FUNCTION actualizar_fecha_creacion()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.fecha_creacion := NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER before_artista_insert
+BEFORE INSERT ON artistas
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_fecha_creacion();
+
+-- 2. Trigger para registrar en un log cuando se elimina una canción de una playlist
+-- Primero creamos la tabla de logs si no existe
+CREATE TABLE IF NOT EXISTS logs_eliminaciones (
+    id_log SERIAL PRIMARY KEY,
+    id_lista INTEGER,
+    id_cancion INTEGER,
+    usuario VARCHAR(100),
+    fecha_eliminacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    accion VARCHAR(50)
+);
+
+-- Función para el trigger
+CREATE OR REPLACE FUNCTION registrar_eliminacion_cancion_lista()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Registrar la eliminación en el log
+    INSERT INTO logs_eliminaciones (id_lista, id_cancion, usuario, accion)
+    VALUES (OLD.id_lista, OLD.id_cancion, current_user, 'Eliminación de canción de lista');
+    
+    -- Reordenar las posiciones de las canciones restantes en la lista
+    UPDATE canciones_lista
+    SET posicion = posicion - 1
+    WHERE id_lista = OLD.id_lista AND posicion > OLD.posicion;
+    
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER after_cancion_lista_delete
+AFTER DELETE ON canciones_lista
+FOR EACH ROW
+EXECUTE FUNCTION registrar_eliminacion_cancion_lista();
