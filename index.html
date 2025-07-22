@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor de Música</title>
+    <link rel="stylesheet" href="recursos_estaicos/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Reproductor Musical</h1>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Buscar canciones...">
+                <button id="search-btn"><i class="fas fa-search"></i></button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <nav>
+                    <ul>
+                        <li class="active" data-section="home"><i class="fas fa-home"></i> Inicio</li>
+                        <li data-section="artists"><i class="fas fa-users"></i> Artistas</li>
+                        <li data-section="albums"><i class="fas fa-compact-disc"></i> Álbumes</li>
+                        <li data-section="playlists"><i class="fas fa-list"></i> Listas</li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="content">
+                <section id="home-section" class="content-section active">
+                    <h2>Recomendaciones</h2>
+                    <div class="songs-grid" id="featured-songs"></div>
+                </section>
+
+                <section id="artists-section" class="content-section">
+                    <h2>Artistas</h2>
+                    <div class="artists-grid" id="artists-list"></div>
+                </section>
+
+                <section id="albums-section" class="content-section">
+                    <h2>Álbumes</h2>
+                    <div class="albums-grid" id="albums-list"></div>
+                </section>
+
+                <section id="playlists-section" class="content-section">
+                    <h2>Listas de Reproducción</h2>
+                    <div class="playlists-grid" id="playlists-list"></div>
+                </section>
+
+                <section id="songs-section" class="content-section">
+                    <h2 id="songs-section-title">Canciones</h2>
+                    <div class="songs-list" id="songs-list"></div>
+                </section>
+            </main>
+        </div>
+
+        <footer class="player-controls">
+            <div class="song-info">
+                <img id="now-playing-cover" src="https://via.placeholder.com/50" alt="Album cover">
+                <div>
+                    <p id="now-playing-title">No hay canción seleccionada</p>
+                    <p id="now-playing-artist"></p>
+                </div>
+            </div>
+            <div class="player-main-controls">
+                <button id="prev-btn"><i class="fas fa-step-backward"></i></button>
+                <button id="play-btn"><i class="fas fa-play"></i></button>
+                <button id="next-btn"><i class="fas fa-step-forward"></i></button>
+            </div>
+            <div class="progress-container">
+                <span id="current-time">0:00</span>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <span id="duration">0:00</span>
+            </div>
+            <div class="volume-control">
+                <button id="volume-btn"><i class="fas fa-volume-up"></i></button>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.7">
+            </div>
+            <audio id="audio-player"></audio>
+        </footer>
+    </div>
+
+    <script src="recursos_estaicos/js/script.js"></script>
+</body>
+
+</html>
